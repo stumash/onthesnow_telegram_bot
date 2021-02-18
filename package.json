@@ -22,5 +22,8 @@
   "bugs": {
     "url": "https://github.com/stumash/stumash_onthesnow_bot/issues"
   },
-  "homepage": "https://github.com/stumash/stumash_onthesnow_bot#readme"
+  "homepage": "https://github.com/stumash/stumash_onthesnow_bot#readme",
+  "dependencies": {
+    "slimbot": "^5.0.0"
+  }
 }
