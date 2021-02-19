@@ -1,7 +1,7 @@
 (async function () {
   // Get the bot's api token
   const fs = require("fs").promises;
-  const token = await fs.readFile(".token", "utf8");
+  const token = (await fs.readFile(".token", "utf8")).trim();
 
   // Initialize the bot.
   // The bot listens to incoming messages from Telegram, and can send messages to users and groups
@@ -14,8 +14,5 @@
   botConfig.setupBot(bot);
 
   // Start listening to incoming messages from telegram
-  bot.startPolling((err) => {
-    console.log(err);
-  });
-  console.log("made it to the end");
+  bot.startPolling();
 })();
