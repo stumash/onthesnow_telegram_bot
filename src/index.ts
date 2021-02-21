@@ -1,6 +1,7 @@
 import { promises as fs } from "fs";
 import Slimbot from "slimbot";
 import { setupBot } from "./botConfig";
+import userStore from "./db";
 
 (async function () {
   // Get the bot's api token
@@ -10,7 +11,7 @@ import { setupBot } from "./botConfig";
   const bot = new Slimbot(token);
 
   // Set up the bot with all custom behaviour
-  setupBot(bot);
+  setupBot(bot, userStore);
 
   // Start listening to incoming messages from telegram
   bot.startPolling();
