@@ -94,6 +94,7 @@ class RegisteredUserStore {
             user.first_name || null,
             user.last_name || null,
             (err: Sqlite3Error | null) => {
+              this.addUserStmt.reset();
               if (err) {
                 if (err.errno === Sqlite3Errno.SqliteConstraint) {
                   // The constraint that the telegram_id be unique was not met, meaning the user already exists.
@@ -105,7 +106,6 @@ class RegisteredUserStore {
                   reject(err);
                 }
               } else {
-                this.addUserStmt.finalize();
                 resolve(true);
               }
             }
@@ -127,13 +127,13 @@ class RegisteredUserStore {
         this.db.serialize(() => {
           // supply value to delete
           this.delUserStmt.run(user.telegram_id, (err: Sqlite3Error | null) => {
+            this.delUserStmt.reset();
             if (err) {
               console.log("REMOVE USER FAILED SQL");
               console.log(err.errno);
               console.log(err.code);
               reject(err);
             } else {
-              this.delUserStmt.finalize();
               resolve(true);
             }
           });
