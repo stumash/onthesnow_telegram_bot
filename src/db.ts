@@ -9,6 +9,29 @@ interface Sqlite3Error {
 enum Sqlite3Errno {
   SqliteConstraint = 19,
 }
+function isSqlite3Error(a: any): a is Sqlite3Error {
+  if (a) {
+    return (
+      isSqlite3Errno(a.errno) &&
+      typeof a.code === "string" &&
+      (a.stack === undefined || typeof a.stack === "string")
+    );
+  } else {
+    return false;
+  }
+}
+function isSqlite3Errno(a: any): a is Sqlite3Errno {
+  if (typeof a === "number") {
+    switch (a) {
+      case Sqlite3Errno.SqliteConstraint:
+        return true;
+      default:
+        return false;
+    }
+  } else {
+    return false;
+  }
+}
 
 class RegisteredUserStore {
   private db: sqlite3.Database;
@@ -62,9 +85,10 @@ class RegisteredUserStore {
         this.db.serialize(() => {
           this.db.all(
             "SELECT telegram_id, first_name, last_name FROM Users",
-            (_: Statement, err: Sqlite3Error | null, users: User[]) => {
+            (_: Statement, users: User[], err: Sqlite3Error | null) => {
               if (err) {
                 console.log("GET USERS FAILED SQL");
+                console.log(err);
                 console.log(err.stack);
                 console.log(err.errno);
                 reject(err);
@@ -84,62 +108,58 @@ class RegisteredUserStore {
    * @param {User} the user to add
    * @returns {boolean} true if the user is added, false ifo it already exists, and an Error for other failures
    */
-  addUser(user: User): Promise<boolean> {
-    return new Promise<boolean>(
-      (resolve: (_: boolean) => void, reject: (_: Sqlite3Error) => void) => {
-        this.db.serialize(() => {
-          // supply values to insert
-          this.addUserStmt.run(
-            user.telegram_id,
-            user.first_name || null,
-            user.last_name || null,
-            (err: Sqlite3Error | null) => {
-              this.addUserStmt.reset();
-              if (err) {
-                if (err.errno === Sqlite3Errno.SqliteConstraint) {
-                  // The constraint that the telegram_id be unique was not met, meaning the user already exists.
-                  resolve(false);
-                } else {
-                  console.log("ADD USER FAILED SQL");
-                  console.log(err.stack);
-                  console.log(err.errno);
-                  reject(err);
-                }
-              } else {
-                resolve(true);
-              }
-            }
-          );
-        });
+  async addUser(user: User): Promise<boolean> {
+    try {
+      await this.runStatement(
+        this.addUserStmt,
+        user.telegram_id,
+        user.first_name || null,
+        user.last_name || null
+      );
+      return true;
+    } catch (err) {
+      if (isSqlite3Error(err)) {
+        if (err.errno === Sqlite3Errno.SqliteConstraint) {
+          return false;
+        }
       }
-    );
+      console.log("ADD USER FAILED SQL");
+      console.log(`errno: ${err.errno}`);
+      console.log(`code: ${err.code}`);
+      throw err;
+    }
   }
 
   /**
    * Remove a uesr from the list of registered users.
    *
    * @param {User} the user to remove
-   * @returns {boolean} true if the user is removed, false if the user wasn't found, and an Error for other failures
+   * @returns {void} true if the user is removed, false if the user wasn't found, and an Error for other failures
    */
-  removeUser(user: User): Promise<boolean> {
-    return new Promise<boolean>(
-      (resolve: (_: boolean) => void, reject: (_: Sqlite3Error) => void) => {
-        this.db.serialize(() => {
-          // supply value to delete
-          this.delUserStmt.run(user.telegram_id, (err: Sqlite3Error | null) => {
-            this.delUserStmt.reset();
-            if (err) {
-              console.log("REMOVE USER FAILED SQL");
-              console.log(err.errno);
-              console.log(err.code);
-              reject(err);
-            } else {
-              resolve(true);
-            }
-          });
+  async removeUser(user: User): Promise<void> {
+    try {
+      await this.runStatement(this.delUserStmt, user.telegram_id);
+    } catch (err) {
+      console.log("REMOVE USER FAILED SQL");
+      console.log(`errno: ${err.errno}`);
+      console.log(`code: ${err.code}`);
+      throw err;
+    }
+  }
+
+  private runStatement(stmt: sqlite3.Statement, ...params: any): Promise<void> {
+    return new Promise<void>((resolve, reject: (_: Sqlite3Error) => void) => {
+      this.db.serialize(() => {
+        stmt.run(...params, (err: Sqlite3Error | null) => {
+          stmt.reset();
+          if (err) {
+            reject(err);
+          } else {
+            resolve();
+          }
         });
-      }
-    );
+      });
+    });
   }
 }
 

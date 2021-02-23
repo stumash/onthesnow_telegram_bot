@@ -113,12 +113,19 @@ async function handleRegister(
   }
 }
 
-function handleUnregister(
+async function handleUnregister(
   bot: Slimbot,
   message: Message,
   userStore: RegisteredUserStore
-): void {
-  // TODO
+): Promise<void> {
+  const user = { telegram_id: message.chat.id };
+
+  try {
+    await userStore.removeUser(user);
+    bot.sendMessage(message.chat.id, "You are now not registered!");
+  } catch (e) {
+    console.log(e);
+  }
 }
 
 function handleInvalid(bot: Slimbot, message: Message): void {
