@@ -1,39 +1,14 @@
 import sqlite3, { Statement } from "sqlite3";
 sqlite3.verbose();
 
-interface Sqlite3Error {
-  errno: Sqlite3Errno;
-  code: string;
-  stack?: string;
-}
-enum Sqlite3Errno {
-  SqliteConstraint = 19,
-}
-function isSqlite3Error(a: any): a is Sqlite3Error {
-  if (a) {
-    return (
-      isSqlite3Errno(a.errno) &&
-      typeof a.code === "string" &&
-      (a.stack === undefined || typeof a.stack === "string")
-    );
-  } else {
-    return false;
-  }
-}
-function isSqlite3Errno(a: any): a is Sqlite3Errno {
-  if (typeof a === "number") {
-    switch (a) {
-      case Sqlite3Errno.SqliteConstraint:
-        return true;
-      default:
-        return false;
-    }
-  } else {
-    return false;
-  }
-}
-
-class RegisteredUserStore {
+/**
+ * Access persisted user data. Encapsulates db.
+ *
+ * async getUsers() -> User[]
+ * async addUser(user: User): boolean
+ * async removeUser(user: User): void
+ */
+class DataStore {
   private db: sqlite3.Database;
   private addUserStmt: sqlite3.Statement;
   private delUserStmt: sqlite3.Statement;
@@ -48,7 +23,7 @@ class RegisteredUserStore {
     this.delUserStmt = delUserStmt;
   }
 
-  static async asyncConstructor(): Promise<RegisteredUserStore> {
+  static async asyncConstructor(): Promise<DataStore> {
     return new Promise((resolve) => {
       // connect to the db
       const db = new sqlite3.Database("db.db");
@@ -69,7 +44,7 @@ class RegisteredUserStore {
           "DELETE FROM Users WHERE telegram_id = ?"
         );
 
-        resolve(new RegisteredUserStore(db, addUserStmt, delUserStmt));
+        resolve(new DataStore(db, addUserStmt, delUserStmt));
       });
     });
   }
@@ -163,12 +138,44 @@ class RegisteredUserStore {
   }
 }
 
+interface Sqlite3Error {
+  errno: Sqlite3Errno;
+  code: string;
+  stack?: string;
+}
+enum Sqlite3Errno {
+  SqliteConstraint = 19,
+}
+function isSqlite3Error(a: any): a is Sqlite3Error {
+  if (a) {
+    return (
+      isSqlite3Errno(a.errno) &&
+      typeof a.code === "string" &&
+      (a.stack === undefined || typeof a.stack === "string")
+    );
+  } else {
+    return false;
+  }
+}
+function isSqlite3Errno(a: any): a is Sqlite3Errno {
+  if (typeof a === "number") {
+    switch (a) {
+      case Sqlite3Errno.SqliteConstraint:
+        return true;
+      default:
+        return false;
+    }
+  } else {
+    return false;
+  }
+}
+
 interface User {
   telegram_id: string;
   first_name?: string;
   last_name?: string;
 }
 
-const userStorePromise = RegisteredUserStore.asyncConstructor();
-export default userStorePromise;
-export { RegisteredUserStore, User };
+const dataStorePromise = DataStore.asyncConstructor();
+export default dataStorePromise;
+export { DataStore, User };

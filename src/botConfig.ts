@@ -7,7 +7,7 @@ import {
   OptionalSendParams,
   ParseMode,
 } from "./types/slimbotTypes";
-import { RegisteredUserStore, User } from "./db";
+import { DataStore, User } from "./db";
 
 enum AcceptedCommand {
   Register = "/register",
@@ -20,7 +20,8 @@ enum AcceptedCommand {
  * The bot listens to incoming messages from Telegram, and can send messages to users and groups
  * for which it knows the ID.
  */
-const setupBot = (bot: Slimbot, userStore: RegisteredUserStore) => {
+const setupBot = (bot: Slimbot, dataStore: DataStore) => {
+  //console.log(`command: ${AcceptedCommand.Register}`);
   bot.on(MessageType.Message, async (message) => {
     // if there's no message contents from which to parse a command, handleInvalid
     if (!message.entities || !message.text) {
@@ -37,10 +38,10 @@ const setupBot = (bot: Slimbot, userStore: RegisteredUserStore) => {
 
     switch (command) {
       case AcceptedCommand.Register:
-        handleRegister(bot, message, userStore);
+        handleRegister(bot, message, dataStore);
         break;
       case AcceptedCommand.Unregister:
-        handleUnregister(bot, message, userStore);
+        handleUnregister(bot, message, dataStore);
         break;
     }
   });
@@ -88,7 +89,7 @@ function parseCommand(
 async function handleRegister(
   bot: Slimbot,
   message: Message,
-  userStore: RegisteredUserStore
+  dataStore: DataStore
 ): Promise<void> {
   const newUser: User = {
     telegram_id: message.chat.id,
@@ -101,7 +102,7 @@ async function handleRegister(
   }
 
   try {
-    const success = await userStore.addUser(newUser);
+    const success = await dataStore.addUser(newUser);
     if (success) {
       bot.sendMessage(message.chat.id, "You've been registered successfully!");
     } else {
@@ -116,12 +117,12 @@ async function handleRegister(
 async function handleUnregister(
   bot: Slimbot,
   message: Message,
-  userStore: RegisteredUserStore
+  dataStore: DataStore
 ): Promise<void> {
   const user = { telegram_id: message.chat.id };
 
   try {
-    await userStore.removeUser(user);
+    await dataStore.removeUser(user);
     bot.sendMessage(message.chat.id, "You are now not registered!");
   } catch (e) {
     console.log(e);
@@ -129,15 +130,21 @@ async function handleUnregister(
 }
 
 function handleInvalid(bot: Slimbot, message: Message): void {
+  const acceptedCommands = Object.values(AcceptedCommand);
   const helpMessage = [
-    "Your input:",
-    `> ${message.text}`,
-    "was invalid.",
-    "This bot accepts only two possible inputs:",
-    "`/register`",
-    "`/unregister`",
+    "```",
+    "usage: <command>",
+    "",
+    "accepted commands:",
+    ...acceptedCommands.map((s) => "  " + s), // indented
+    "",
+    "description:",
+    "  Subscribe to updates about",
+    "  upcoming snow conditions",
+    "  on your chosen ski resorts",
+    "```",
   ].join("\n");
-  const optionalParams: OptionalSendParams = { parseMode: ParseMode.Markdown };
+  const optionalParams: OptionalSendParams = { parse_mode: ParseMode.Markdown };
   bot.sendMessage(message.chat.id, helpMessage, optionalParams);
 }
 
