@@ -14,6 +14,11 @@ import dataStorePromise from "./db";
   // Set up the bot with all custom behaviour
   setupBot(bot, dataStore);
 
+  // here's an example url that serves pure json for a given ski resort
+  // the json includes the weather report - and much more
+  // https://www.onthesnow.com/_next/data/0.6.9_en-US/vermont/stowe-mountain-resort/skireport.json
+  // https://www.onthesnow.com/_next/data/0.6.9_en-US/wyoming/jackson-hole/skireport.json
+
   // Start listening to incoming messages from telegram
   bot.startPolling();
 })();
