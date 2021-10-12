@@ -24,7 +24,7 @@ const setupBot = (bot: Slimbot, dataStore: DataStore) => {
   //console.log(`command: ${AcceptedCommand.Register}`);
   bot.on(MessageType.Message, async (message) => {
     // if there's no message contents from which to parse a command, handleInvalid
-    if (!message.entities || !message.text) {
+    if (!(message.entities && message.text)) {
       handleInvalid(bot, message);
       return;
     }
@@ -58,21 +58,19 @@ function parseCommand(
 ): AcceptedCommand | undefined {
   let command = undefined;
   for (const entity of entities) {
-    if (command !== undefined) {
-      // If you already parsed an AcceptedCommand, return undefined. There should be only one
-      command = undefined;
-      break;
-    }
-
-    if (entity.type !== EntityType.BotCommand) {
-      // If there's any entities other than a command, return undefined
-      break;
+    const alreadyCommand = command !== undefined;
+    const notBotCommand = entity.type !== EntityType.BotCommand;
+    if (alreadyCommand || notBotCommand) {
+      return undefined;
     }
 
     const commandText = messageText.substring(
       entity.offset,
       entity.offset + entity.length
     );
+
+    [AcceptedCommand.Register, AcceptedCommand.Unregister]
+
     if (commandText === AcceptedCommand.Register) {
       command = AcceptedCommand.Register;
     } else if (commandText === AcceptedCommand.Unregister) {

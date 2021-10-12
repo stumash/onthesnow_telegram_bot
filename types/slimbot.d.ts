@@ -1,5 +1,5 @@
 declare module "slimbot" {
-  import * as t from "src/types/slimbot";
+  import * as S from "src/types/slimbot";
 
   class Slimbot {
     constructor(token: string): Slimbot;
@@ -7,15 +7,15 @@ declare module "slimbot" {
     startPolling(): void;
 
     on(
-      commandName: t.MessageType,
-      callback: (message: t.Message) => void
+      commandName: S.MessageType,
+      callback: (message: S.Message) => void
     ): void;
 
     sendMessage(
       id: string,
       message: string,
-      optionalParams?: t.OptionalSendParams
-    ): Promise<t.SentMessageResult>;
+      optionalParams?: S.OptionalSendParams
+    ): Promise<S.SentMessageResult>;
   }
 
   export default Slimbot;
