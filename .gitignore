@@ -1,5 +1,5 @@
 token
-db.db
+*.db
 node_modules/
 dist/
-src/script.ts
+jsons/

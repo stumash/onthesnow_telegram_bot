@@ -21,7 +21,6 @@ enum AcceptedCommand {
  * for which it knows the ID.
  */
 const setupBot = (bot: Slimbot, dataStore: DataStore) => {
-  //console.log(`command: ${AcceptedCommand.Register}`);
   bot.on(MessageType.Message, async (message) => {
     // if there's no message contents from which to parse a command, handleInvalid
     if (!(message.entities && message.text)) {
@@ -69,8 +68,6 @@ function parseCommand(
       entity.offset + entity.length
     );
 
-    [AcceptedCommand.Register, AcceptedCommand.Unregister]
-
     if (commandText === AcceptedCommand.Register) {
       command = AcceptedCommand.Register;
     } else if (commandText === AcceptedCommand.Unregister) {
@@ -89,9 +86,7 @@ async function handleRegister(
   message: Message,
   dataStore: DataStore
 ): Promise<void> {
-  const newUser: User = {
-    telegram_id: message.chat.id,
-  };
+  const newUser: User = { telegram_id: Number(message.chat.id), };
   if (message.chat.first_name) {
     newUser.first_name = message.chat.first_name;
   }
@@ -117,7 +112,7 @@ async function handleUnregister(
   message: Message,
   dataStore: DataStore
 ): Promise<void> {
-  const user = { telegram_id: message.chat.id };
+  const user = { telegram_id: Number(message.chat.id) };
 
   try {
     await dataStore.removeUser(user);
